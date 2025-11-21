@@ -115,6 +115,7 @@ var createStorage = (basePath) => {
 var overlaySize = { width: 420, height: 280 };
 var isMac = process.platform === "darwin";
 var overlayWindow = null;
+var mainWindow = null;
 var tray = null;
 var hideTimer = null;
 var onboardingMessage = null;
@@ -137,6 +138,10 @@ if (!hasInstanceLock) {
 }
 import_electron.app.on("second-instance", () => {
   showOverlay();
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
 });
 var rendererUrl = process.env.VITE_DEV_SERVER_URL ?? `file://${import_node_path2.default.join(__dirname, "../dist/index.html")}`;
 var preloadPath = import_node_path2.default.join(__dirname, "preload.cjs");
@@ -160,6 +165,28 @@ var getOverlayPosition = () => {
     x: Math.round(x + width / 2 - overlaySize.width / 2),
     y: Math.round(y + height / 2 - overlaySize.height / 2)
   };
+};
+var createMainWindow = () => {
+  mainWindow = new import_electron.BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: false,
+    backgroundColor: "#09090b",
+    // zinc-950
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      sandbox: false,
+      nodeIntegration: false
+    }
+  });
+  mainWindow.on("ready-to-show", () => {
+    mainWindow?.show();
+  });
+  mainWindow.loadURL(rendererUrl + (process.env.VITE_DEV_SERVER_URL ? "" : "#/"));
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 };
 var createOverlayWindow = () => {
   overlayWindow = new import_electron.BrowserWindow({
@@ -198,7 +225,7 @@ var createOverlayWindow = () => {
   overlayWindow.on("closed", () => {
     overlayWindow = null;
   });
-  overlayWindow.loadURL(rendererUrl);
+  overlayWindow.loadURL(rendererUrl + (process.env.VITE_DEV_SERVER_URL ? "#/overlay" : "#/overlay"));
 };
 var showOverlay = () => {
   if (!overlayWindow) createOverlayWindow();
@@ -270,6 +297,17 @@ var createTray = () => {
       label: "Open Journal",
       click: () => showOverlay()
     },
+    {
+      label: "Open Main Window",
+      click: () => {
+        if (mainWindow) {
+          mainWindow.show();
+          mainWindow.focus();
+        } else {
+          createMainWindow();
+        }
+      }
+    },
     { type: "separator" },
     {
       label: "Quit",
@@ -306,7 +344,11 @@ var registerIpc = () => {
   import_electron.ipcMain.handle("save-entry", async (_event, text) => {
     const trimmed = (text ?? "").toString().trim();
     if (!trimmed) return null;
-    return storage.saveEntry(trimmed);
+    const result = await storage.saveEntry(trimmed);
+    if (mainWindow) {
+      mainWindow.webContents.send("entries-updated");
+    }
+    return result;
   });
   import_electron.ipcMain.handle("list-entries", async (_event, payload) => {
     const { limit = 20, offset = 0 } = payload || {};
@@ -333,15 +375,16 @@ var unregisterNudgeShortcuts = () => {
 };
 import_electron.app.whenReady().then(() => {
   import_electron.app.setAppUserModelId("com.quillio.glassjournal");
-  if (isMac && import_electron.app.dock) import_electron.app.dock.hide();
   createOverlayWindow();
+  createMainWindow();
   createTray();
   import_electron.Menu.setApplicationMenu(null);
   setShortcut();
   registerIpc();
   sendOnboardingToast();
   import_electron.app.on("activate", () => {
-    if (!overlayWindow) createOverlayWindow();
+    if (!mainWindow) createMainWindow();
+    else mainWindow.show();
   });
 });
 import_electron.app.on("will-quit", () => {

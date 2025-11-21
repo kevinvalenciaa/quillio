@@ -19,16 +19,11 @@ const Insights = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border p-4 sticky top-0 bg-background/95 backdrop-blur-lg z-10">
-        <div className="max-w-4xl mx-auto flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-semibold">Insights</h1>
-            <p className="text-sm text-muted-foreground">What I'm seeing about you</p>
-          </div>
+    <div className="h-full overflow-y-auto bg-background p-8">
+      <header className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-semibold text-white">Insights</h1>
+          <p className="text-muted-foreground">What I'm seeing about you</p>
         </div>
       </header>
 

@@ -11,14 +11,11 @@ const Canvas = () => {
   const [notes, setNotes] = useState('');
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-full bg-background">
       {/* Canvas Area */}
       <div className="flex-1 flex flex-col">
         <header className="border-b border-border p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-5 w-5" />
-            </Button>
             <div>
               <h1 className="font-semibold">New Canvas</h1>
               <p className="text-xs text-muted-foreground">Today</p>

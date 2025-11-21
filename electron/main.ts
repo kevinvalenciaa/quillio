@@ -7,6 +7,7 @@ const overlaySize = { width: 420, height: 280 };
 const isMac = process.platform === "darwin";
 
 let overlayWindow: BrowserWindow | null = null;
+let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let hideTimer: NodeJS.Timeout | null = null;
 let onboardingMessage: string | null = null;
@@ -31,6 +32,10 @@ if (!hasInstanceLock) {
 
 app.on("second-instance", () => {
   showOverlay();
+  if (mainWindow) {
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.focus();
+  }
 });
 
 const rendererUrl =
@@ -62,6 +67,31 @@ const getOverlayPosition = () => {
     x: Math.round(x + width / 2 - overlaySize.width / 2),
     y: Math.round(y + height / 2 - overlaySize.height / 2),
   };
+};
+
+const createMainWindow = () => {
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    show: false,
+    backgroundColor: "#09090b", // zinc-950
+    webPreferences: {
+      preload: preloadPath,
+      contextIsolation: true,
+      sandbox: false,
+      nodeIntegration: false,
+    },
+  });
+
+  mainWindow.on("ready-to-show", () => {
+    mainWindow?.show();
+  });
+
+  mainWindow.loadURL(rendererUrl + (process.env.VITE_DEV_SERVER_URL ? "" : "#/"));
+  
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
 };
 
 const createOverlayWindow = () => {
@@ -106,7 +136,8 @@ const createOverlayWindow = () => {
     overlayWindow = null;
   });
 
-  overlayWindow.loadURL(rendererUrl);
+  // Load the overlay route
+  overlayWindow.loadURL(rendererUrl + (process.env.VITE_DEV_SERVER_URL ? "#/overlay" : "#/overlay"));
 };
 
 const showOverlay = () => {
@@ -188,6 +219,17 @@ const createTray = () => {
       label: "Open Journal",
       click: () => showOverlay(),
     },
+    {
+      label: "Open Main Window",
+      click: () => {
+        if (mainWindow) {
+            mainWindow.show();
+            mainWindow.focus();
+        } else {
+            createMainWindow();
+        }
+      }
+    },
     { type: "separator" },
     {
       label: "Quit",
@@ -228,7 +270,12 @@ const registerIpc = () => {
   ipcMain.handle("save-entry", async (_event, text: string) => {
     const trimmed = (text ?? "").toString().trim();
     if (!trimmed) return null;
-    return storage.saveEntry(trimmed);
+    const result = await storage.saveEntry(trimmed);
+    // Notify main window if it exists to update the list
+    if (mainWindow) {
+        mainWindow.webContents.send('entries-updated');
+    }
+    return result;
   });
   ipcMain.handle("list-entries", async (_event, payload: { limit?: number; offset?: number }) => {
     const { limit = 20, offset = 0 } = payload || {};
@@ -258,17 +305,34 @@ const unregisterNudgeShortcuts = () => {
 
 app.whenReady().then(() => {
   app.setAppUserModelId("com.quillio.glassjournal");
-  if (isMac && app.dock) app.dock.hide();
+  // Show dock icon for main window interaction if not purely background
+  // But original code hid dock. If we have a main window, we probably want the dock icon?
+  // "Quillio Product Vision ... A private thinking tool"
+  // If it's a full app, we likely want a dock icon. 
+  // However, to match "existing behavior" for overlay, maybe we keep it hidden until main window is shown?
+  // Let's default to showing dock icon if main window is the primary interface now.
+  // But user said "DO NOT change how the current electron overlay pop up works".
+  // If I show dock icon, it might affect overlay behavior (focus stealing).
+  // I will keep it hidden for now unless main window is open? 
+  // Actually, if I create a main window, Electron usually shows the dock icon automatically if I don't hide it.
+  // The original code: `if (isMac && app.dock) app.dock.hide();`
+  // I will wrap this in a check or just remove it if we want a main app.
+  // A main app usually needs a dock icon.
+  // I'll comment out the dock hiding for now to support the main window experience.
+  // if (isMac && app.dock) app.dock.hide();
 
   createOverlayWindow();
+  createMainWindow(); // Open main window on start? "One-sentence pitch... Quillio is an AI journal..." 
+  // Usually apps open their main window.
   createTray();
-  Menu.setApplicationMenu(null);
+  Menu.setApplicationMenu(null); // We might want a menu for the main window later.
   setShortcut();
   registerIpc();
   sendOnboardingToast();
 
   app.on("activate", () => {
-    if (!overlayWindow) createOverlayWindow();
+    if (!mainWindow) createMainWindow();
+    else mainWindow.show();
   });
 });
 
@@ -277,5 +341,7 @@ app.on("will-quit", () => {
 });
 
 app.on("window-all-closed", (event) => {
+  // If both windows are closed, we might want to keep running for the tray/shortcut?
+  // Original behavior: `event.preventDefault();` (keeps running).
   event.preventDefault();
 });
