@@ -21,6 +21,38 @@ const Onboarding = () => {
     navigate('/');
   };
 
+  const thinkingStyleOptions: { value: UserPreferences['thinkingStyle']; icon: typeof BookOpen; label: string }[] = [
+    { value: 'journal', icon: BookOpen, label: 'I journal / reflect a lot' },
+    { value: 'overthink', icon: Brain, label: 'I overthink decisions' },
+    { value: 'patterns', icon: TrendingUp, label: 'I want to see patterns' },
+  ];
+
+  const privacyOptions: {
+    value: UserPreferences['privacyLevel'];
+    icon: typeof Lock;
+    label: string;
+    desc: string;
+  }[] = [
+    {
+      value: 'device',
+      icon: Lock,
+      label: 'On-device',
+      desc: 'Everything stays on your device',
+    },
+    {
+      value: 'balanced',
+      icon: Shield,
+      label: 'Balanced',
+      desc: 'Encrypted processing, best experience',
+    },
+    {
+      value: 'cloud',
+      icon: Cloud,
+      label: 'Cloud',
+      desc: 'Full features, cloud sync',
+    },
+  ];
+
   const steps = [
     // Screen 1: Welcome
     <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
@@ -37,17 +69,13 @@ const Onboarding = () => {
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <h2 className="text-2xl font-bold mb-6 text-center">Choose your thinking style</h2>
       <div className="space-y-4 w-full max-w-md">
-        {[
-          { value: 'journal', icon: BookOpen, label: 'I journal / reflect a lot' },
-          { value: 'overthink', icon: Brain, label: 'I overthink decisions' },
-          { value: 'patterns', icon: TrendingUp, label: 'I want to see patterns' },
-        ].map(({ value, icon: Icon, label }) => (
+        {thinkingStyleOptions.map(({ value, icon: Icon, label }) => (
           <Card
             key={value}
             className={`p-6 cursor-pointer transition-all hover:border-primary ${
               preferences.thinkingStyle === value ? 'border-primary bg-primary/5' : ''
             }`}
-            onClick={() => setPreferences({ ...preferences, thinkingStyle: value as any })}
+            onClick={() => setPreferences({ ...preferences, thinkingStyle: value })}
           >
             <div className="flex items-center gap-4">
               <Icon className="h-6 w-6 text-primary" />
@@ -103,32 +131,13 @@ const Onboarding = () => {
     <div className="flex flex-col items-center justify-center min-h-screen p-6">
       <h2 className="text-2xl font-bold mb-6 text-center">Choose your privacy level</h2>
       <div className="space-y-4 w-full max-w-md">
-        {[
-          {
-            value: 'device',
-            icon: Lock,
-            label: 'On-device',
-            desc: 'Everything stays on your device',
-          },
-          {
-            value: 'balanced',
-            icon: Shield,
-            label: 'Balanced',
-            desc: 'Encrypted processing, best experience',
-          },
-          {
-            value: 'cloud',
-            icon: Cloud,
-            label: 'Cloud',
-            desc: 'Full features, cloud sync',
-          },
-        ].map(({ value, icon: Icon, label, desc }) => (
+        {privacyOptions.map(({ value, icon: Icon, label, desc }) => (
           <Card
             key={value}
             className={`p-6 cursor-pointer transition-all hover:border-primary ${
               preferences.privacyLevel === value ? 'border-primary bg-primary/5' : ''
             }`}
-            onClick={() => setPreferences({ ...preferences, privacyLevel: value as any })}
+            onClick={() => setPreferences({ ...preferences, privacyLevel: value })}
           >
             <div className="flex items-start gap-4">
               <Icon className="h-6 w-6 text-primary mt-1" />

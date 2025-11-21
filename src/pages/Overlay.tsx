@@ -1,14 +1,43 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 
+type SpeechRecognitionResultEvent = {
+  results: ArrayLike<{
+    isFinal: boolean;
+    0: { transcript: string };
+  }>;
+};
+
+type SpeechRecognitionErrorEvent = {
+  error?: string;
+  message?: string;
+};
+
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start: () => void;
+  stop: () => void;
+  onresult: ((event: SpeechRecognitionResultEvent) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+  onend: (() => void) | null;
+};
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
+
 const App = () => {
   const [visible, setVisible] = useState(false);
   const [text, setText] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [supportsSpeech, setSupportsSpeech] = useState(true);
   const [pulse, setPulse] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [timestamp, setTimestamp] = useState(() => new Date());
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const transcriptionPrefix = useRef<string>("");
 
   const formattedDate = useMemo(
     () =>
@@ -32,6 +61,10 @@ const App = () => {
       setVisible(false);
       setText("");
       setIsSaving(false);
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      setIsRecording(false);
       setPulse(false);
       setToast(null);
     });
@@ -64,6 +97,24 @@ const App = () => {
     return () => window.removeEventListener("keydown", handleKey);
   }, [handleCancel]);
 
+  useEffect(() => {
+    const getSpeechRecognition = (): SpeechRecognitionCtor | null => {
+      const SpeechRecognition = (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition;
+      const WebkitSpeechRecognition = (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition;
+      const ctor = SpeechRecognition ?? WebkitSpeechRecognition;
+      return typeof ctor === "function" ? ctor : null;
+    };
+
+    const ctor = getSpeechRecognition();
+    setSupportsSpeech(Boolean(ctor));
+
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+    };
+  }, []);
+
   const handleSave = async () => {
     const trimmed = text.trim();
     if (!trimmed) {
@@ -92,6 +143,65 @@ const App = () => {
       event.preventDefault();
       handleSave();
     }
+  };
+
+  const startTranscription = () => {
+    const SpeechRecognition = (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }).SpeechRecognition ??
+      (window as unknown as { SpeechRecognition?: SpeechRecognitionCtor; webkitSpeechRecognition?: SpeechRecognitionCtor }).webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+      setSupportsSpeech(false);
+      setToast("Voice transcription isn't supported here.");
+      setTimeout(() => setToast(null), 2600);
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+    transcriptionPrefix.current = text ? `${text} ` : "";
+
+    recognition.onresult = (event: SpeechRecognitionResultEvent) => {
+      const transcript = Array.from(event.results)
+        .map((result) => result[0]?.transcript ?? "")
+        .join(" ");
+      setText(`${transcriptionPrefix.current}${transcript}`.trimStart());
+    };
+
+    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+      console.error("Speech recognition error", event);
+      setToast("Mic error. Please try again.");
+      setTimeout(() => setToast(null), 2600);
+      setIsRecording(false);
+      recognitionRef.current?.stop();
+      recognitionRef.current = null;
+    };
+
+    recognition.onend = () => {
+      setIsRecording(false);
+      recognitionRef.current = null;
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsRecording(true);
+  };
+
+  const stopTranscription = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setIsRecording(false);
+  };
+
+  const handleToggleTranscription = () => {
+    if (isRecording) {
+      stopTranscription();
+      return;
+    }
+    startTranscription();
   };
 
   return (
@@ -129,6 +239,17 @@ const App = () => {
         <div className="mt-4 flex items-center justify-between text-xs text-slate-300/80">
           <span>{text.length} chars</span>
           <div className="flex items-center gap-2">
+            <button
+              className={`rounded-lg border border-white/10 px-3 py-2 font-medium transition hover:border-white/20 hover:bg-white/5 ${
+                isRecording ? "text-red-200" : "text-slate-200"
+              } ${!supportsSpeech && !isRecording ? "cursor-not-allowed opacity-60" : ""}`}
+              onClick={handleToggleTranscription}
+              disabled={!supportsSpeech && !isRecording}
+              aria-pressed={isRecording}
+            >
+              {isRecording ? "Stop Transcription" : "Mic · Transcribe"}
+              {isRecording ? <span className="ml-2 inline-flex h-2 w-2 animate-pulse rounded-full bg-red-300" /> : null}
+            </button>
             <button
               className="rounded-lg border border-white/10 px-3 py-2 font-medium text-slate-200 transition hover:border-white/20 hover:bg-white/5"
               onClick={handleCancel}
