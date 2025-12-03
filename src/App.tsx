@@ -40,12 +40,11 @@ const App = () => {
             <Route path="/overlay" element={<Overlay />} />
             <Route path="/ritual" element={<MondayRitual />} />
             <Route path="/recap" element={<FridayRecap />} />
-            <Route path="/weekly-review" element={<WeeklyReview />} />
+            <Route path="/reviews" element={<WeeklyReview />} />
             
             <Route element={<MainLayout />}>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/capture" element={<DailyCapture />} />
-                <Route path="/reviews" element={<WeeklyReview />} />
                 <Route path="/decisions" element={<DecisionBank />} />
                 <Route path="/settings" element={<div>Settings (Coming Soon)</div>} />
                 

@@ -1,5 +1,6 @@
 import { X, ArrowRight, ArrowUp, AlertCircle, CheckCircle2, Clock, TrendingUp, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
