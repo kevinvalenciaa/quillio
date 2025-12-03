@@ -14,6 +14,10 @@ export default {
       },
     },
     extend: {
+      fontFamily: {
+        sans: ["Space Grotesk", "ui-sans-serif", "system-ui"],
+        serif: ["Playfair Display", "ui-serif", "Georgia"],
+      },
       colors: {
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",

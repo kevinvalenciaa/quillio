@@ -1,41 +1,28 @@
 import { NavLink } from "react-router-dom";
-import { Home, Grid, BarChart2, Folder, Plus, Settings, Search } from "lucide-react";
-import { Button } from "../ui/button";
+import { LayoutDashboard, PenTool, Calendar, Database, Settings, Feather } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Sidebar = () => {
   return (
-    <div className="flex h-full w-64 flex-col border-r border-white/10 bg-background/50 backdrop-blur-xl">
-      <div className="flex h-14 items-center border-b border-white/10 px-4">
-        <div className="flex items-center gap-2 font-semibold text-white">
-          <div className="h-6 w-6 rounded-md bg-blue-500/20 text-blue-500 flex items-center justify-center">
-            Q
-          </div>
+    <div className="flex h-full w-[240px] flex-col border-r border-white/10 bg-[#0F1729] text-white">
+      <div className="flex h-16 items-center px-6 mb-4">
+        <div className="flex items-center gap-3 font-serif text-xl font-semibold tracking-wide">
+          <Feather className="h-5 w-5" />
           Quillio
         </div>
       </div>
 
-      <div className="flex-1 space-y-1 p-3">
-        <div className="mb-4 px-2">
-            <Button variant="outline" className="w-full justify-start text-muted-foreground bg-white/5 border-white/5 hover:bg-white/10 hover:text-white">
-                <Search className="mr-2 h-4 w-4" />
-                Search... <span className="ml-auto text-xs text-muted-foreground">⌘K</span>
-            </Button>
+      <div className="flex-1 space-y-3 px-3">
+        <div className="space-y-1">
+            <NavItem to="/" icon={<LayoutDashboard className="h-5 w-5" />} label="Dashboard" />
+            <NavItem to="/capture" icon={<PenTool className="h-5 w-5" />} label="Daily Captures" />
+            <NavItem to="/reviews" icon={<Calendar className="h-5 w-5" />} label="Weekly Reviews" />
+            <NavItem to="/decisions" icon={<Database className="h-5 w-5" />} label="Decision Bank" />
         </div>
-
-        <NavItem to="/" icon={<Home className="h-4 w-4" />} label="Stream" />
-        <NavItem to="/canvas" icon={<Grid className="h-4 w-4" />} label="Canvas" />
-        <NavItem to="/insights" icon={<BarChart2 className="h-4 w-4" />} label="Insights" />
-        <NavItem to="/library" icon={<Folder className="h-4 w-4" />} label="Library" />
       </div>
 
-      <div className="p-3 border-t border-white/10">
-         <Button className="w-full justify-start bg-blue-600 text-white hover:bg-blue-700 mb-2">
-            <Plus className="mr-2 h-4 w-4" /> New Canvas
-         </Button>
-         <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-white">
-            <Settings className="mr-2 h-4 w-4" /> Settings
-         </Button>
+      <div className="p-4 border-t border-white/5 mt-auto">
+         <NavItem to="/settings" icon={<Settings className="h-5 w-5" />} label="Settings" />
       </div>
     </div>
   );
@@ -46,10 +33,10 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
     to={to}
     className={({ isActive }) =>
       cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
         isActive
-          ? "bg-white/10 text-white"
-          : "text-muted-foreground hover:bg-white/5 hover:text-white"
+          ? "bg-[#C17A72] text-white shadow-md"
+          : "text-gray-400 hover:bg-white/10 hover:text-white"
       )
     }
   >
@@ -57,4 +44,3 @@ const NavItem = ({ to, icon, label }: { to: string; icon: React.ReactNode; label
     {label}
   </NavLink>
 );
-

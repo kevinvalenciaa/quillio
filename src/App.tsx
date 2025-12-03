@@ -1,6 +1,11 @@
 import { HashRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import Overlay from "./pages/Overlay";
-import Index from "./pages/Index"; // This will be the Stream view
+import Dashboard from "./pages/Dashboard";
+import DailyCapture from "./pages/DailyCapture";
+import MondayRitual from "./pages/MondayRitual";
+import FridayRecap from "./pages/FridayRecap";
+import DecisionBank from "./pages/DecisionBank";
+import WeeklyReview from "./pages/WeeklyReview";
 import Canvas from "./pages/Canvas";
 import Insights from "./pages/Insights";
 import Onboarding from "./pages/Onboarding";
@@ -33,13 +38,20 @@ const App = () => {
         <LayoutHandler>
           <Routes>
             <Route path="/overlay" element={<Overlay />} />
+            <Route path="/ritual" element={<MondayRitual />} />
+            <Route path="/recap" element={<FridayRecap />} />
+            <Route path="/weekly-review" element={<WeeklyReview />} />
+            
             <Route element={<MainLayout />}>
-                <Route path="/" element={<Index />} />
-                <Route path="/stream" element={<Index />} />
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/capture" element={<DailyCapture />} />
+                <Route path="/reviews" element={<WeeklyReview />} />
+                <Route path="/decisions" element={<DecisionBank />} />
+                <Route path="/settings" element={<div>Settings (Coming Soon)</div>} />
+                
                 <Route path="/canvas" element={<Canvas />} />
                 <Route path="/insights" element={<Insights />} />
                 <Route path="/library" element={<div>Library (Coming Soon)</div>} />
-                <Route path="/settings" element={<div>Settings (Coming Soon)</div>} />
             </Route>
             <Route path="/onboarding" element={<Onboarding />} />
           </Routes>
