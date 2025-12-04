@@ -46,6 +46,7 @@
     "@radix-ui/react-toggle": "^1.1.9",
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
+    "@supabase/supabase-js": "^2.86.0",
     "@tanstack/react-query": "^5.83.0",
     "better-sqlite3": "^12.4.5",
     "class-variance-authority": "^0.7.1",
@@ -75,10 +76,10 @@
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
-    "concurrently": "^9.2.1",
-    "cross-env": "^10.1.0",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
     "electron": "^39.2.3",
     "electron-builder": "^26.0.12",
     "eslint": "^9.32.0",
@@ -107,10 +108,14 @@
     ],
     "mac": {
       "category": "public.app-category.productivity",
-      "target": ["dmg"]
+      "target": [
+        "dmg"
+      ]
     },
     "win": {
-      "target": ["nsis"],
+      "target": [
+        "nsis"
+      ],
       "artifactName": "${productName}-Setup-${version}.${ext}"
     },
     "extraMetadata": {
