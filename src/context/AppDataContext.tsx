@@ -408,11 +408,13 @@ export function AppDataProvider({ children }: { children: ReactNode }) {
 
   const setPriorities = async (newPriorities: Priority[]) => {
     if (!user) return;
-    
+
     try {
       const monday = getMonday(new Date());
       const weekOf = monday.toISOString().split('T')[0];
-      
+
+      await prioritiesApi.deleteForWeek(user.id, monday);
+
       for (const priority of newPriorities) {
         await prioritiesApi.create({
           user_id: user.id,

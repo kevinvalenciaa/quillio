@@ -274,6 +274,18 @@ export const prioritiesApi = {
     return data;
   },
 
+  async deleteForWeek(userId: string, weekOf: Date) {
+    const monday = getMonday(weekOf);
+
+    const { error } = await supabase
+      .from('priorities')
+      .delete()
+      .eq('user_id', userId)
+      .eq('week_of', monday.toISOString().split('T')[0]);
+
+    if (error) throw error;
+  },
+
   async update(id: string, updates: Partial<Priority>) {
     const { data, error } = await supabase
       .from('priorities')
