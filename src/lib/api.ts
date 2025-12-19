@@ -3,6 +3,13 @@ import type { Database } from '@/types/supabase';
 
 type Tables = Database['public']['Tables'];
 
+async function getCurrentUserId() {
+  const { data, error } = await supabase.auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error('Not authenticated');
+  return data.user.id;
+}
+
 // ============================================
 // CAPTURES API
 // ============================================
@@ -12,9 +19,11 @@ export type CaptureInsert = Tables['captures']['Insert'];
 
 export const capturesApi = {
   async getAll(limit = 50) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('captures')
       .select('*')
+      .eq('user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
     
@@ -23,12 +32,14 @@ export const capturesApi = {
   },
 
   async getToday() {
+    const userId = await getCurrentUserId();
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     const { data, error } = await supabase
       .from('captures')
       .select('*')
+      .eq('user_id', userId)
       .gte('created_at', today.toISOString())
       .order('created_at', { ascending: false });
     
@@ -37,9 +48,11 @@ export const capturesApi = {
   },
 
   async getUnprocessed() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('captures')
       .select('*')
+      .eq('user_id', userId)
       .eq('processed', false)
       .order('created_at', { ascending: true });
     
@@ -48,9 +61,10 @@ export const capturesApi = {
   },
 
   async create(capture: CaptureInsert) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('captures')
-      .insert(capture)
+      .insert({ ...capture, user_id: userId })
       .select()
       .single();
     
@@ -59,10 +73,13 @@ export const capturesApi = {
   },
 
   async update(id: string, updates: Partial<Capture>) {
+    const userId = await getCurrentUserId();
+    const { user_id, ...safeUpdates } = updates;
     const { data, error } = await supabase
       .from('captures')
-      .update(updates)
+      .update(safeUpdates)
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -71,11 +88,13 @@ export const capturesApi = {
   },
 
   async delete(id: string) {
+    const userId = await getCurrentUserId();
     const { error } = await supabase
       .from('captures')
       .delete()
-      .eq('id', id);
-    
+      .eq('id', id)
+      .eq('user_id', userId);
+
     if (error) throw error;
   },
 
@@ -101,9 +120,11 @@ export type DecisionInsert = Tables['decisions']['Insert'];
 
 export const decisionsApi = {
   async getAll() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .select('*')
+      .eq('user_id', userId)
       .order('updated_at', { ascending: false });
     
     if (error) throw error;
@@ -111,9 +132,11 @@ export const decisionsApi = {
   },
 
   async getActiveLoops() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .select('*')
+      .eq('user_id', userId)
       .eq('status', 'active-loop')
       .order('mention_count', { ascending: false });
     
@@ -122,9 +145,11 @@ export const decisionsApi = {
   },
 
   async getLocked() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .select('*')
+      .eq('user_id', userId)
       .eq('status', 'locked')
       .order('locked_at', { ascending: false });
     
@@ -133,9 +158,11 @@ export const decisionsApi = {
   },
 
   async getDeferred() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .select('*')
+      .eq('user_id', userId)
       .eq('status', 'deferred')
       .order('deferred_until', { ascending: true });
     
@@ -144,9 +171,10 @@ export const decisionsApi = {
   },
 
   async create(decision: DecisionInsert) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
-      .insert(decision)
+      .insert({ ...decision, user_id: userId })
       .select()
       .single();
     
@@ -155,6 +183,7 @@ export const decisionsApi = {
   },
 
   async lock(id: string, selectedOption: string, reasoning: string, nextStep: string) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .update({
@@ -167,6 +196,7 @@ export const decisionsApi = {
         execution_progress: 0
       })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -175,6 +205,7 @@ export const decisionsApi = {
   },
 
   async defer(id: string, deferUntil: Date) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .update({
@@ -182,6 +213,7 @@ export const decisionsApi = {
         deferred_until: deferUntil.toISOString()
       })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -190,10 +222,12 @@ export const decisionsApi = {
   },
 
   async dismiss(id: string) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .update({ status: 'dismissed' })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -202,6 +236,7 @@ export const decisionsApi = {
   },
 
   async updateProgress(id: string, progress: number, status: 'not-started' | 'in-progress' | 'completed') {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('decisions')
       .update({
@@ -209,6 +244,7 @@ export const decisionsApi = {
         execution_status: status
       })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -217,12 +253,14 @@ export const decisionsApi = {
   },
 
   async incrementMention(id: string) {
+    const userId = await getCurrentUserId();
     const { data: current } = await supabase
       .from('decisions')
       .select('mention_count')
       .eq('id', id)
+      .eq('user_id', userId)
       .single();
-    
+
     const { data, error } = await supabase
       .from('decisions')
       .update({
@@ -230,6 +268,7 @@ export const decisionsApi = {
         last_mentioned: new Date().toISOString()
       })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -247,11 +286,13 @@ export type PriorityInsert = Tables['priorities']['Insert'];
 
 export const prioritiesApi = {
   async getForWeek(weekOf: Date) {
+    const userId = await getCurrentUserId();
     const monday = getMonday(weekOf);
-    
+
     const { data, error } = await supabase
       .from('priorities')
       .select('*')
+      .eq('user_id', userId)
       .eq('week_of', monday.toISOString().split('T')[0])
       .order('importance', { ascending: false });
     
@@ -264,9 +305,10 @@ export const prioritiesApi = {
   },
 
   async create(priority: PriorityInsert) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('priorities')
-      .insert(priority)
+      .insert({ ...priority, user_id: userId })
       .select()
       .single();
     
@@ -287,10 +329,13 @@ export const prioritiesApi = {
   },
 
   async update(id: string, updates: Partial<Priority>) {
+    const userId = await getCurrentUserId();
+    const { user_id, ...safeUpdates } = updates;
     const { data, error } = await supabase
       .from('priorities')
-      .update(updates)
+      .update(safeUpdates)
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -299,10 +344,12 @@ export const prioritiesApi = {
   },
 
   async updateActualTime(id: string, actualTime: number) {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('priorities')
       .update({ actual_time: actualTime })
       .eq('id', id)
+      .eq('user_id', userId)
       .select()
       .single();
     
@@ -319,9 +366,11 @@ export type FounderContext = Tables['founder_context']['Row'];
 
 export const founderContextApi = {
   async get() {
+    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('founder_context')
       .select('*')
+      .eq('user_id', userId)
       .single();
     
     if (error && error.code !== 'PGRST116') throw error; // Ignore "no rows" error
@@ -329,8 +378,7 @@ export const founderContextApi = {
   },
 
   async upsert(context: Partial<FounderContext>) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = await getCurrentUserId();
 
     // Calculate runway
     const runway = calculateRunway(
@@ -349,7 +397,7 @@ export const founderContextApi = {
     const { data, error } = await supabase
       .from('founder_context')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         ...context,
         runway_days: runway,
         default_alive_status: aliveStatus
@@ -370,11 +418,13 @@ export type WeeklyRitual = Tables['weekly_rituals']['Row'];
 
 export const weeklyRitualsApi = {
   async getCurrentWeek() {
+    const userId = await getCurrentUserId();
     const monday = getMonday(new Date());
-    
+
     const { data, error } = await supabase
       .from('weekly_rituals')
       .select('*')
+      .eq('user_id', userId)
       .eq('week_of', monday.toISOString().split('T')[0])
       .single();
     
@@ -383,15 +433,14 @@ export const weeklyRitualsApi = {
   },
 
   async startRitual() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) throw new Error('Not authenticated');
+    const userId = await getCurrentUserId();
 
     const monday = getMonday(new Date());
     
     const { data, error } = await supabase
       .from('weekly_rituals')
       .upsert({
-        user_id: user.id,
+        user_id: userId,
         week_of: monday.toISOString().split('T')[0]
       })
       .select()
@@ -402,6 +451,7 @@ export const weeklyRitualsApi = {
   },
 
   async completeSection(section: 'decisions_reviewed' | 'priorities_set' | 'execution_committed') {
+    const userId = await getCurrentUserId();
     const monday = getMonday(new Date());
     
     const updates: any = { [section]: true };
@@ -415,6 +465,7 @@ export const weeklyRitualsApi = {
       .from('weekly_rituals')
       .update(updates)
       .eq('week_of', monday.toISOString().split('T')[0])
+      .eq('user_id', userId)
       .select()
       .single();
     
